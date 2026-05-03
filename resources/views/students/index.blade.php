@@ -49,7 +49,7 @@
                                             </a>
 
                                             <!-- AJAX Delete Button -->
-                                            <button class="btn btn-sm btn-danger deleteBtn" data-id="{{ $student->id }}">
+                                            <button class="btn btn-danger deleteStudentBtn" data-id="{{ $student->id }}">
                                                 <i class="bi bi-trash"></i> Delete
                                             </button>
                                         </td>
@@ -67,52 +67,4 @@
         </div>
     </div>
 </div>
-@endsection
-
-@section('scripts')
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
-<script>
-$(document).ready(function(){
-
-    // ================= CSRF SETUP =================
-    $.ajaxSetup({
-        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
-    });
-
-    // ================= DELETE STUDENT =================
-    $(document).on('click', '.deleteBtn', function(){
-        let id = $(this).data('id');
-
-        if(confirm("Are you sure you want to delete this student?")){
-            $.ajax({
-                url: '/students/' + id,
-                type: 'DELETE',
-                success: function(response){
-                    // Remove the row from table
-                    $('#row_' + id).remove();
-
-                    // Show success alert
-                    let alertHtml = `<div class="alert alert-success alert-dismissible fade show" role="alert">
-                                        ${response.message || 'Student deleted successfully!'}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                     </div>`;
-                    $('#ajax-messages').html(alertHtml);
-                    setTimeout(() => { $('.alert').alert('close'); }, 3000);
-                },
-                error: function(xhr){
-                    let msg = xhr.responseJSON?.message || 'Failed to delete the student.';
-                    let alertHtml = `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                        ${msg}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                     </div>`;
-                    $('#ajax-messages').html(alertHtml);
-                    setTimeout(() => { $('.alert').alert('close'); }, 4000);
-                }
-            });
-        }
-    });
-
-});
-</script>
 @endsection

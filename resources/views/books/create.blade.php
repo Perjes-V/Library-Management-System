@@ -10,7 +10,6 @@
                 </div>
 
                 <div class="card-body p-4">
-
                     {{-- AJAX Messages --}}
                     <div id="ajax-messages"></div>
 
@@ -53,65 +52,4 @@
         </div>
     </div>
 </div>
-@endsection
-
-@section('scripts')
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
-<script>
-$(document).ready(function(){
-
-    // ================= CSRF SETUP =================
-    $.ajaxSetup({
-        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
-    });
-
-    // ================= AJAX SUBMIT =================
-    $('#addBookForm').on('submit', function(e){
-        e.preventDefault(); // prevent normal form submission
-
-        let formData = $(this).serialize();
-
-        $.ajax({
-            url: $(this).attr('action'),
-            method: 'POST',
-            data: formData,
-            success: function(response){
-                // Show success message
-                $('#ajax-messages').html(`<div class="alert alert-success alert-dismissible fade show" role="alert">
-                    ${response.message || 'Book added successfully!'}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>`);
-
-                // Optional: Clear form fields
-                $('#addBookForm')[0].reset();
-
-                // Redirect to masterlist after 1.5 seconds
-                setTimeout(() => {
-                    window.location.href = "{{ route('books.index') }}";
-                }, 1500);
-            },
-            error: function(xhr){
-                let errors = xhr.responseJSON?.errors;
-                let errorHtml = '';
-
-                if(errors){
-                    $.each(errors, function(key, value){
-                        errorHtml += `<li>${value[0]}</li>`;
-                    });
-                    errorHtml = `<ul>${errorHtml}</ul>`;
-                } else {
-                    errorHtml = `<p>${xhr.responseJSON?.message || 'Failed to add book.'}</p>`;
-                }
-
-                $('#ajax-messages').html(`<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    ${errorHtml}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>`);
-            }
-        });
-    });
-
-});
-</script>
 @endsection

@@ -44,7 +44,7 @@
                                                 </a>
 
                                                 <!-- AJAX Delete Button -->
-                                                <button class="btn btn-sm btn-danger deleteBtn" data-id="{{ $category->id }}">
+                                                <button class="btn btn-sm btn-danger deleteCategoryBtn" data-id="{{ $category->id }}">
                                                     <i class="bi bi-trash me-1"></i> Delete
                                                 </button>
                                             </td>
@@ -62,44 +62,4 @@
         </div>
     </div>
 </div>
-@endsection
-
-@section('scripts')
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
-<script>
-$(document).ready(function(){
-
-    // ================= CSRF SETUP =================
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
-
-    // ================= DELETE CATEGORY =================
-    $(document).on('click', '.deleteBtn', function(){
-        let id = $(this).data('id');
-        if(confirm("Are you sure you want to delete this category?")){
-            $.ajax({
-                url: '/categories/' + id,
-                type: 'DELETE',
-                success: function(response){
-                    $('#row_' + id).remove();
-                    let alertHtml = `<div class="alert alert-success alert-dismissible fade show" role="alert">
-                                        ${response.message || 'Category deleted successfully!'}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                     </div>`;
-                    $('.container').first().prepend(alertHtml);
-                    setTimeout(() => { $('.alert').alert('close'); }, 3000);
-                },
-                error: function(){
-                    alert('Failed to delete the category.');
-                }
-            });
-        }
-    });
-
-});
-</script>
 @endsection

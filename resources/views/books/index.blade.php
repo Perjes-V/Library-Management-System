@@ -58,39 +58,3 @@
     </div>
 </div>
 @endsection
-
-@section('scripts')
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
-<script>
-$(document).ready(function(){
-    // ================= CSRF SETUP =================
-    $.ajaxSetup({
-        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
-    });
-
-    // ================= DELETE BOOK =================
-    $(document).on('click', '.deleteBtn', function(){
-        let id = $(this).data('id');
-        if(confirm("Delete this book?")){
-            $.ajax({
-                url: '/books/' + id,
-                type: 'DELETE',
-                success: function(response){
-                    $('#row_' + id).remove();
-                    let alertHtml = `<div class="alert alert-success alert-dismissible fade show" role="alert">
-                                        ${response.message || 'Book deleted successfully!'}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                     </div>`;
-                    $('.container').first().prepend(alertHtml);
-                    setTimeout(() => { $('.alert').alert('close'); }, 3000);
-                },
-                error: function(){
-                    alert('Failed to delete the book.');
-                }
-            });
-        }
-    });
-});
-</script>
-@endsection

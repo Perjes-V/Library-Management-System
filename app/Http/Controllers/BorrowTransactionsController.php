@@ -26,7 +26,7 @@ class BorrowTransactionsController extends Controller
         return view('borrow_transactions.create', compact('students', 'books'));
     }
 
-    // ================= STORE =================
+    // ================= STORE (FIXED AJAX) =================
     public function store(Request $request)
     {
         $request->validate([
@@ -41,12 +41,12 @@ class BorrowTransactionsController extends Controller
         $dueDate = Carbon::now()->addDays(7);
 
         foreach ($request->books as $bookId) {
+
             $quantity = $request->quantities[$bookId] ?? 1;
 
             $book = Book::find($bookId);
             if (!$book || $book->quantity < $quantity) continue;
 
-            // Prevent borrowing same book twice if not returned
             $existing = BorrowTransaction::where('student_id', $studentId)
                 ->where('book_id', $bookId)
                 ->where('status', 'borrowed')
@@ -66,8 +66,10 @@ class BorrowTransactionsController extends Controller
             $book->decrement('quantity', $quantity);
         }
 
-        return redirect()->route('borrow_transactions.index')
-            ->with('success', 'Books borrowed successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Books borrowed successfully.'
+        ]);
     }
 
     // ================= EDIT =================
@@ -80,7 +82,7 @@ class BorrowTransactionsController extends Controller
         return view('borrow_transactions.edit', compact('record', 'students', 'books'));
     }
 
-    // ================= UPDATE =================
+    // ================= UPDATE (FIXED AJAX) =================
     public function update(Request $request, $id)
     {
         $record = BorrowTransaction::findOrFail($id);
@@ -96,8 +98,8 @@ class BorrowTransactionsController extends Controller
 
         $returnQuantity = $request->return_quantity ?? 0;
 
-        // Handle returned books
         if ($request->status === 'returned' && $returnQuantity > 0) {
+
             $book = Book::find($record->book_id);
 
             if ($book) {
@@ -111,16 +113,15 @@ class BorrowTransactionsController extends Controller
                 'return_date' => Carbon::now(),
             ]);
 
-            // Reduce quantity in borrow transaction
             $record->quantity -= $returnQuantity;
 
-            // Delete borrow transaction if all books are returned
             if ($record->quantity <= 0) {
                 $record->delete();
             } else {
-                $record->status = 'borrowed'; // still has remaining books
+                $record->status = 'borrowed';
                 $record->save();
             }
+
         } else {
             $record->status = $request->status;
             $record->save();
@@ -162,12 +163,11 @@ class BorrowTransactionsController extends Controller
         return view('borrow_transactions.returned', compact('returnedBooks'));
     }
 
-    // ================= DELETE RETURNED BOOK =================
+    // ================= DELETE RETURNED =================
     public function destroyReturned($id)
     {
         $returned = ReturnedBook::findOrFail($id);
 
-        // Just delete the returned record; do NOT affect master book quantity
         $returned->delete();
 
         return response()->json([

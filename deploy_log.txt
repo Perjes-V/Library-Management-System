@@ -1,0 +1,8 @@
+===== START 04/16/2026 23:37:34 =====
+[2026-04-16 23:37:36] [SUCCESS] Environment OK
+[2026-04-16 23:37:36] [INFO] Checking WAMP...
+[2026-04-16 23:37:39] [SUCCESS] WAMP started successfully
+[2026-04-16 23:37:47] [SUCCESS] Dependencies already installed
+[2026-04-16 23:37:47] [SUCCESS] APP_KEY exists
+[2026-04-16 23:37:47] [INFO] Checking database readiness...
+[2026-04-16 23:38:20] [WARN] Database not ready yet (continuing anyway)

@@ -3,158 +3,136 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use App\Models\Student;
 
 class StudentsController extends Controller
 {
     // ===================== INDEX =====================
-    public function index(Request $request)
+    public function index()
     {
-        $students = Student::orderBy('created_at', 'desc')->get();
+        $students = Student::latest()->get();
 
-        if ($request->ajax()) {
-            return response()->json([
+        return request()->ajax()
+            ? response()->json([
                 'success' => true,
-                'data' => $students
-            ]);
-        }
-
-        return view('students.index', compact('students'));
+                'message' => 'Students loaded',
+                'data'    => $students
+            ])
+            : view('students.index', compact('students'));
     }
 
     // ===================== CREATE =====================
-    public function create(Request $request)
+    public function create()
     {
-        if ($request->ajax()) {
-            return view('students.partials.create'); // optional partial for AJAX
-        }
-
         return view('students.create');
     }
 
     // ===================== STORE =====================
     public function store(Request $request)
     {
-        $request->validate([
-            'student_id' => 'required|unique:students,student_id|max:20',
-            'name'       => 'required|unique:students,name|max:255',
-            'course'     => 'required|max:50',
-            'year_level' => 'required|integer|min:1|max:5',
-        ]);
-
         try {
-            $student = Student::create([
-                'student_id' => $request->student_id,
-                'name'       => $request->name,
-                'course'     => $request->course,
-                'year_level' => $request->year_level,
+            $validator = Validator::make($request->all(), [
+                'student_id' => 'required|unique:students,student_id|max:20',
+                'name'       => 'required|max:255',
+                'course'     => 'required|max:50',
+                'year_level' => 'required|integer|min:1|max:5',
             ]);
 
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Student added successfully!',
-                    'data'    => $student
-                ]);
-            }
-
-            return redirect()->route('students.index')
-                             ->with('success', 'Student added successfully!');
-        } catch (\Exception $e) {
-            if ($request->ajax()) {
+            if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to add student. ' . $e->getMessage()
-                ], 500);
+                    'message' => 'Student Already Existed!',
+                    'errors'  => $validator->errors()
+                ], 422);
             }
 
-            return redirect()->back()->with('error', 'Failed to add student.');
+            $student = Student::create($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Student added successfully!',
+                'data'    => $student
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
         }
     }
 
     // ===================== EDIT =====================
-    public function edit(Request $request, $id)
+    public function edit(Student $student)
     {
-        $student = Student::findOrFail($id);
-
-        if ($request->ajax()) {
-            return view('students.partials.edit', compact('student'));
-        }
-
-        return view('students.edit', compact('student'));
+        return request()->ajax()
+            ? response()->json([
+                'success' => true,
+                'message' => 'Student loaded',
+                'data'    => $student
+            ])
+            : view('students.edit', compact('student'));
     }
 
     // ===================== UPDATE =====================
-    public function update(Request $request, $id)
+    public function update(Request $request, Student $student)
     {
-        $student = Student::findOrFail($id);
-
-        $request->validate([
-            'student_id' => 'required|unique:students,student_id,' . $id . '|max:20',
-            'name'       => 'required|unique:students,name,' . $id . '|max:255',
-            'course'     => 'required|max:50',
-            'year_level' => 'required|integer|min:1|max:5',
-        ]);
-
         try {
-            $student->update([
-                'student_id' => $request->student_id,
-                'name'       => $request->name,
-                'course'     => $request->course,
-                'year_level' => $request->year_level,
+            $validator = Validator::make($request->all(), [
+                'student_id' => 'required|unique:students,student_id,' . $student->id,
+                'name'       => 'required|max:255',
+                'course'     => 'required|max:50',
+                'year_level' => 'required|integer|min:1|max:5',
             ]);
 
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Student updated successfully!',
-                    'data'    => $student
-                ]);
-            }
-
-            return redirect()->route('students.index')
-                             ->with('success', 'Student updated successfully!');
-        } catch (\Exception $e) {
-            if ($request->ajax()) {
+            if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update student. ' . $e->getMessage()
-                ], 500);
+                    'message' => 'Update Failed',
+                    'errors'  => $validator->errors()
+                ], 422);
             }
 
-            return redirect()->back()->with('error', 'Failed to update student.');
+            $student->update($validator->validated());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Student updated successfully!',
+                'data'    => $student
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
         }
     }
 
     // ===================== DELETE =====================
-    public function destroy(Request $request, $id)
+    public function destroy(Student $student)
     {
-        $student = Student::findOrFail($id);
-
-        // Optional: Prevent deletion if student has borrow records
-        if ($student->borrowTransactions()->exists()) {
-            $message = 'Cannot delete student with borrow records!';
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => $message], 400);
-            }
-            return redirect()->route('students.index')->with('error', $message);
-        }
-
         try {
+            if ($student->borrowTransactions()->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete student with borrow records'
+                ], 400);
+            }
+
             $student->delete();
 
-            if ($request->ajax()) {
-                return response()->json(['success' => true, 'message' => 'Student deleted successfully!']);
-            }
+            return response()->json([
+                'success' => true,
+                'message' => 'Student deleted successfully!'
+            ]);
 
-            return redirect()->route('students.index')
-                             ->with('success', 'Student deleted successfully!');
         } catch (\Exception $e) {
-            $message = 'Failed to delete student. ' . $e->getMessage();
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => $message], 500);
-            }
-            return redirect()->back()->with('error', $message);
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred'
+            ], 500);
         }
     }
 }

@@ -20,19 +20,22 @@ class CategoryController extends Controller
         return view('categories.create');
     }
 
-    // ================= STORE =================
+    // ================= STORE (AJAX FIXED) =================
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|unique:categories,name',
         ]);
 
-        Category::create([
+        $category = Category::create([
             'name' => $request->name,
         ]);
 
-        return redirect()->route('categories.index')
-            ->with('success', 'Category created successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Category created successfully.',
+            'data' => $category
+        ]);
     }
 
     // ================= EDIT =================
@@ -42,7 +45,7 @@ class CategoryController extends Controller
         return view('categories.edit', compact('category'));
     }
 
-    // ================= UPDATE =================
+    // ================= UPDATE (AJAX FIXED) =================
     public function update(Request $request, $id)
     {
         $category = Category::findOrFail($id);
@@ -55,17 +58,22 @@ class CategoryController extends Controller
             'name' => $request->name,
         ]);
 
-        return redirect()->route('categories.index')
-            ->with('success', 'Category updated successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Category updated successfully.',
+            'data' => $category
+        ]);
     }
 
-    // ================= DESTROY =================
+    // ================= DESTROY (AJAX FIXED) =================
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
         $category->delete();
 
-        return redirect()->route('categories.index')
-            ->with('success', 'Category deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Category deleted successfully.'
+        ]);
     }
 }
